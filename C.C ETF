@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>C.C ETF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: #0b0f1a;
+      color: #eaeaf0;
+    }
+
+    header {
+      padding: 30px;
+      text-align: center;
+      background: linear-gradient(135deg, #1f2b6c, #0b0f1a);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      opacity: 0.7;
+    }
+
+    .price-box {
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .price {
+      font-size: 3rem;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    canvas {
+      background: #12182b;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    footer {
+      margin-top: 80px;
+      padding: 30px;
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    .editor {
+      display: none;
+      margin-top: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      margin: 5px;
+      width: 160px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #1f7aff;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .pin-box {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>C.C ETF</h1>
+  <p>Simulated Exchange-Traded Fund</p>
+</header>
+
+<div class="price-box">
+  <div>Current Price</div>
+  <div class="price" id="currentPrice">$100.00</div>
+</div>
+
+<div class="container">
+  <canvas id="priceChart" height="120"></canvas>
+</div>
+
+<footer>
+  <div class="pin-box">
+    <input type="password" id="pinInput" placeholder="Enter PIN">
+    <button onclick="unlockEditor()">Unlock</button>
+  </div>
+
+  <div class="editor" id="editor">
+    <h3>Price Editor</h3>
+    <input type="number" id="newPrice" placeholder="New Price">
+    <button onclick="updatePrice()">Update Price</button>
+  </div>
+</footer>
+
+<script>
+  const PIN = "529052";
+
+  let prices = JSON.parse(localStorage.getItem("cc_prices")) || [100];
+  let labels = prices.map((_, i) => `Day ${i + 1}`);
+
+  const priceEl = document.getElementById("currentPrice");
+
+  function updateDisplay() {
+    const latest = prices[prices.length - 1];
+    priceEl.textContent = `$${latest.toFixed(2)}`;
+  }
+
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "C.C ETF Price",
+        data: prices,
+        borderColor: "#1f7aff",
+        tension: 0.3
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { display: false },
+        y: { ticks: { color: "#aaa" } }
+      }
+    }
+  });
+
+  function unlockEditor() {
+    const pin = document.getElementById("pinInput").value;
+    if (pin === PIN) {
+      document.getElementById("editor").style.display = "block";
+      alert("Editor unlocked");
+    } else {
+      alert("Wrong PIN");
+    }
+  }
+
+  function updatePrice() {
+    const val = parseFloat(document.getElementById("newPrice").value);
+    if (!isNaN(val)) {
+      prices.push(val);
+      labels.push(`Day ${prices.length}`);
+      localStorage.setItem("cc_prices", JSON.stringify(prices));
+
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = prices;
+      chart.update();
+      updateDisplay();
+    }
+  }
+
+  updateDisplay();
+</script>
+
+</body>
+</html>
