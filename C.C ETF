@@ -1,190 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>C.C ETF</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>C.C ETF</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            margin: 0;
+            padding: 20px;
+        }
 
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background: #0b0f1a;
-      color: #eaeaf0;
-    }
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #58a6ff;
+        }
 
-    header {
-      padding: 30px;
-      text-align: center;
-      background: linear-gradient(135deg, #1f2b6c, #0b0f1a);
-    }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #161b22;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
 
-    header h1 {
-      margin: 0;
-      font-size: 2.5rem;
-      letter-spacing: 1px;
-    }
+        .price-box {
+            background: #238636;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
 
-    header p {
-      opacity: 0.7;
-    }
-
-    .price-box {
-      text-align: center;
-      margin: 30px 0;
-    }
-
-    .price {
-      font-size: 3rem;
-      font-weight: bold;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    canvas {
-      background: #12182b;
-      border-radius: 12px;
-      padding: 10px;
-    }
-
-    footer {
-      margin-top: 80px;
-      padding: 30px;
-      text-align: center;
-      opacity: 0.6;
-    }
-
-    .editor {
-      display: none;
-      margin-top: 20px;
-    }
-
-    input, button {
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-      font-size: 1rem;
-    }
-
-    input {
-      margin: 5px;
-      width: 160px;
-    }
-
-    button {
-      cursor: pointer;
-      background: #1f7aff;
-      color: white;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    .pin-box {
-      margin-top: 20px;
-    }
-  </style>
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
 </head>
-
 <body>
 
-<header>
-  <h1>C.C ETF</h1>
-  <p>Simulated Exchange-Traded Fund</p>
-</header>
-
-<div class="price-box">
-  <div>Current Price</div>
-  <div class="price" id="currentPrice">$100.00</div>
-</div>
+<h1>C.C ETF</h1>
 
 <div class="container">
-  <canvas id="priceChart" height="120"></canvas>
+    <div id="currentPrice" class="price-box">Loading...</div>
+    <canvas id="priceChart" height="120"></canvas>
 </div>
 
-<footer>
-  <div class="pin-box">
-    <input type="password" id="pinInput" placeholder="Enter PIN">
-    <button onclick="unlockEditor()">Unlock</button>
-  </div>
-
-  <div class="editor" id="editor">
-    <h3>Price Editor</h3>
-    <input type="number" id="newPrice" placeholder="New Price">
-    <button onclick="updatePrice()">Update Price</button>
-  </div>
-</footer>
-
 <script>
-  const PIN = "529052";
+    async function loadPrices() {
+        const url = "prices.json?t=" + Date.now();
 
-  let prices = JSON.parse(localStorage.getItem("cc_prices")) || [100];
-  let labels = prices.map((_, i) => `Day ${i + 1}`);
+        try {
+            const response = await fetch(url, { cache: "no-cache" });
 
-  const priceEl = document.getElementById("currentPrice");
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
 
-  function updateDisplay() {
-    const latest = prices[prices.length - 1];
-    priceEl.textContent = `$${latest.toFixed(2)}`;
-  }
+            const data = await response.json();
 
-  const ctx = document.getElementById("priceChart").getContext("2d");
-  const chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "C.C ETF Price",
-        data: prices,
-        borderColor: "#1f7aff",
-        tension: 0.3
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: { display: false },
-        y: { ticks: { color: "#aaa" } }
-      }
+            if (!Array.isArray(data)) {
+                throw new Error("JSON is not an array");
+            }
+
+            const labels = data.map(entry => entry.date);
+            const prices = data.map(entry => Number(entry.price));
+
+            const latestPrice = prices[prices.length - 1];
+            document.getElementById("currentPrice").innerText =
+                "Current Price: $" + latestPrice.toFixed(2);
+
+            const ctx = document.getElementById("priceChart").getContext("2d");
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "C.C ETF Price",
+                        data: prices,
+                        borderColor: "#58a6ff",
+                        backgroundColor: "rgba(88,166,255,0.15)",
+                        borderWidth: 3,
+                        tension: 0.25,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: "#e6edf3" } }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: "#e6edf3" },
+                            grid: { color: "#30363d" }
+                        },
+                        y: {
+                            ticks: { color: "#e6edf3" },
+                            grid: { color: "#30363d" }
+                        }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error loading price data:", error);
+            document.getElementById("currentPrice").innerText = "Error loading data";
+        }
     }
-  });
 
-  function unlockEditor() {
-    const pin = document.getElementById("pinInput").value;
-    if (pin === PIN) {
-      document.getElementById("editor").style.display = "block";
-      alert("Editor unlocked");
-    } else {
-      alert("Wrong PIN");
-    }
-  }
-
-  function updatePrice() {
-    const val = parseFloat(document.getElementById("newPrice").value);
-    if (!isNaN(val)) {
-      prices.push(val);
-      labels.push(`Day ${prices.length}`);
-      localStorage.setItem("cc_prices", JSON.stringify(prices));
-
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = prices;
-      chart.update();
-      updateDisplay();
-    }
-  }
-
-  updateDisplay();
+    loadPrices();
 </script>
 
 </body>
 </html>
+
